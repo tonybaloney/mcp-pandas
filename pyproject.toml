@@ -1,6 +1,6 @@
 [project]
 name = "mcp-pandas"
-version = "0.3.0"
+version = "0.4.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "matplotlib>=3.10.1",
     "mcp[cli]",
     "openpyxl>=3.1.5",
     "pandas",
@@ -19,3 +20,9 @@ mcp-pandas = "mcp_pandas:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+]

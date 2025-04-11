@@ -102,12 +102,97 @@ The provided XML tags are for the assistants understanding. Implore to make all 
 
 Start your first message fully in character with something like "Oh, Hey there! I see you've chosen the topic {topic}. Let's get started! 🚀"
 """
+server = Server("pandas-manager")
+df: pd.DataFrame
 
 
-async def main(data_path: str):
-    logger.info(f"Starting Pandas MCP Server with path: {data_path}")
+@server.list_resources()
+async def handle_list_resources() -> list[types.Resource]:
+    logger.debug("Handling list_resources request")
+    return [
+        types.Resource(
+            uri=AnyUrl("memo://shape"),
+            name="DataFrame Shape",
+            description="The shape of the DataFrame",
+            mimeType="text/plain",
+        )
+    ]
 
-    # Select a load method based on the file extension
+
+@server.read_resource()
+async def handle_read_resource(uri: AnyUrl) -> str:
+    logger.debug("Handling read_resource request for URI: %s", uri)
+    if uri.scheme != "memo":
+        logger.error("Unsupported URI scheme: %s", uri.scheme)
+        raise ValueError(f"Unsupported URI scheme: {uri.scheme}")
+
+    path = str(uri).replace("memo://", "")
+    if not path or path != "shape":
+        logger.error(f"Unknown resource path: {path}")
+        raise ValueError(f"Unknown resource path: {path}")
+
+    return str(df.shape)
+
+
+@server.list_prompts()
+async def handle_list_prompts() -> list[types.Prompt]:
+    logger.debug("Handling list_prompts request")
+    return []
+
+
+@server.get_prompt()
+async def handle_get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
+    logger.debug(f"Handling get_prompt request for {name} with args {arguments}")
+
+
+@server.list_tools()
+async def handle_list_tools() -> list[types.Tool]:
+    """List available tools"""
+    return [
+        types.Tool(
+            name="plot",
+            description="Plot a graph from the DataFrame",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "description": "Type of plot to create (e.g., bar, line, scatter)",
+                        "enum": ["bar", "line", "scatter"],
+                    },
+                },
+                "required": ["kind"],
+            },
+        ),
+    ]
+
+@server.call_tool()
+async def handle_call_tool(
+    name: str, arguments: dict[str, Any] | None
+) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
+    """Handle tool execution requests"""
+    try:
+        if not arguments:
+            raise ValueError("Missing arguments")
+
+        if name == "plot":
+            kind = arguments.get("kind", "bar")
+            # Assuming plot_query is a function that generates a plot from the query
+            plot = df.plot(kind=kind).get_figure()
+            out = BytesIO()
+            plot.savefig(out, format="png")
+            out.seek(0)
+            plot_data = out.read()
+            out.close()
+            return [types.ImageContent(type='image', mimeType="image/png", data=b64encode(plot_data).decode('utf-8'))]
+
+    except Exception as e:
+        return [types.TextContent(type="text", text=f"Error: {str(e)}")]
+
+
+def load_data(data_path: str) -> None:
+    global df
+    logger.info(f"Loading data from {data_path}")
     file_extension = Path(data_path).suffix.lower()
     if file_extension == ".csv":
         df = pd.read_csv(data_path)
@@ -120,91 +205,13 @@ async def main(data_path: str):
         raise ValueError(f"Unsupported file format: {file_extension}")
     logger.info(f"Loaded data from {data_path} with shape: {df.shape}")
 
-    server = Server("pandas-manager")
 
-    # Register handlers
-    logger.debug("Registering handlers")
+async def main(data_path: str, mode: str = "stdio") -> None | Server:
+    global df
+    logger.info(f"Starting Pandas MCP Server with path: {data_path}")
 
-    @server.list_resources()
-    async def handle_list_resources() -> list[types.Resource]:
-        logger.debug("Handling list_resources request")
-        return [
-            types.Resource(
-                uri=AnyUrl("memo://shape"),
-                name="DataFrame Shape",
-                description="The shape of the DataFrame",
-                mimeType="text/plain",
-            )
-        ]
-
-    @server.read_resource()
-    async def handle_read_resource(uri: AnyUrl) -> str:
-        logger.debug(f"Handling read_resource request for URI: {uri}")
-        if uri.scheme != "memo":
-            logger.error(f"Unsupported URI scheme: {uri.scheme}")
-            raise ValueError(f"Unsupported URI scheme: {uri.scheme}")
-
-        path = str(uri).replace("memo://", "")
-        if not path or path != "shape":
-            logger.error(f"Unknown resource path: {path}")
-            raise ValueError(f"Unknown resource path: {path}")
-
-        return str(df.shape)
-
-    @server.list_prompts()
-    async def handle_list_prompts() -> list[types.Prompt]:
-        logger.debug("Handling list_prompts request")
-        return []
-
-    @server.get_prompt()
-    async def handle_get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
-        logger.debug(f"Handling get_prompt request for {name} with args {arguments}")
-
-
-    @server.list_tools()
-    async def handle_list_tools() -> list[types.Tool]:
-        """List available tools"""
-        return [
-            types.Tool(
-                name="plot",
-                description="Plot a graph from the DataFrame",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "kind": {
-                            "type": "string",
-                            "description": "Type of plot to create (e.g., bar, line, scatter)",
-                            "enum": ["bar", "line", "scatter"],
-                        },
-                    },
-                    "required": ["kind"],
-                },
-            ),
-        ]
-
-    @server.call_tool()
-    async def handle_call_tool(
-        name: str, arguments: dict[str, Any] | None
-    ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-        """Handle tool execution requests"""
-        try:
-            if not arguments:
-                raise ValueError("Missing arguments")
-
-            if name == "plot":
-                kind = arguments.get("kind", "bar")
-                # Assuming plot_query is a function that generates a plot from the query
-                plot = df.plot(kind=kind).get_figure()
-                out = BytesIO()
-                plot.savefig(out, format="png")
-                out.seek(0)
-                plot_data = out.read()
-                out.close()
-                return [types.ImageContent(type='image', mimeType="image/png", data=b64encode(plot_data).decode('utf-8'))]
-
-        except Exception as e:
-            return [types.TextContent(type="text", text=f"Error: {str(e)}")]
-
+    load_data(data_path)
+    
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
         logger.info("Server running with stdio transport")
         await server.run(

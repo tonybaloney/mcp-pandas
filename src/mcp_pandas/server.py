@@ -160,6 +160,18 @@ async def handle_list_tools() -> list[types.Tool]:
                         "description": "Type of plot to create (e.g., bar, line, scatter)",
                         "enum": ["bar", "line", "scatter"],
                     },
+                    "x": {
+                        "type": "string",
+                        "description": "Column name for x-axis",
+                    },
+                    "y": {
+                        "type": "string",
+                        "description": "Column name for y-axis",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Title of the plot",
+                    },
                 },
                 "required": ["kind"],
             },
@@ -189,17 +201,30 @@ async def handle_call_tool(
     try:
         if not arguments:
             raise ValueError("Missing arguments")
-
+        
         if name == "plot":
             kind = arguments.get("kind", "bar")
-            # Assuming plot_query is a function that generates a plot from the query
-            plot = df.plot(kind=kind).get_figure()
+            x = arguments.get("x")
+            y = arguments.get("y")
+            title = arguments.get("title", "Plot")
+            if kind not in ["bar", "line", "scatter"]:
+                raise ValueError(f"Unsupported plot type: {kind}")
+            if x and y:
+                if x not in df.columns or y not in df.columns:
+                    raise ValueError(f"Columns '{x}' or '{y}' not found in DataFrame")
+                plot = df.plot(kind=kind, x=x, y=y, title=title).get_figure()
+            else:
+                plot = df.plot(kind=kind, title=title).get_figure()
+
             out = BytesIO()
             plot.savefig(out, format="png")
             out.seek(0)
             plot_data = out.read()
             out.close()
-            return [types.ImageContent(type='image', mimeType="image/png", data=b64encode(plot_data).decode('utf-8'))]
+            return [
+                types.TextContent(type="text", text=f"Generated {kind} plot"),
+                types.ImageContent(type='image', mimeType="image/png", data=b64encode(plot_data).decode('utf-8'))
+            ]
         elif name == "average":
             column = arguments.get("column")
             if column not in df.columns:

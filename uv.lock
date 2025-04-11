@@ -434,17 +434,18 @@ cli = [
 
 [[package]]
 name = "mcp-pandas"
-version = "0.4.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
-    { name = "mcp", extra = ["cli"] },
+    { name = "mcp" },
     { name = "openpyxl" },
     { name = "pandas" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "mcp", extra = ["cli"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -452,13 +453,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.1" },
-    { name = "mcp", extras = ["cli"] },
+    { name = "mcp" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mcp", extras = ["cli"] },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
 ]

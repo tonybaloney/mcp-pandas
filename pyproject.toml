@@ -1,0 +1,21 @@
+[project]
+name = "mcp-pandas"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Anthony Shaw", email = "anthony.p.shaw@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]",
+    "openpyxl>=3.1.5",
+    "pandas",
+]
+
+[project.scripts]
+mcp-pandas = "mcp_pandas:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

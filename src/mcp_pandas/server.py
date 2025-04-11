@@ -19,6 +19,7 @@ if sys.platform == "win32" and os.environ.get('PYTHONIOENCODING') is None:
     sys.stderr.reconfigure(encoding="utf-8")
 
 logger = logging.getLogger('mcp_pandas')
+logger.setLevel(logging.DEBUG)
 logger.info("Starting MCP Pandas Server")
 
 PROMPT_TEMPLATE = """
@@ -158,7 +159,7 @@ async def main(data_path: str):
     @server.get_prompt()
     async def handle_get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
         logger.debug(f"Handling get_prompt request for {name} with args {arguments}")
-        pass
+
 
     @server.list_tools()
     async def handle_list_tools() -> list[types.Tool]:
@@ -171,10 +172,9 @@ async def main(data_path: str):
                     "type": "object",
                     "properties": {
                         "kind": {
-                            "type": "enum",
+                            "type": "string",
                             "description": "Type of plot to create (e.g., bar, line, scatter)",
                             "enum": ["bar", "line", "scatter"],
-                            "default": "bar",
                         },
                     },
                     "required": ["kind"],

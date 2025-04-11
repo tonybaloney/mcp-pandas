@@ -22,3 +22,7 @@ async def test_plot_generation(data_path):
     data = await mcp_server.handle_call_tool("plot", {"kind": "bar"})
     assert data is not None
     assert data[0].type == "image"
+
+    avg = await mcp_server.handle_call_tool("average", {"column": "Total amount"})
+    assert avg is not None
+    assert avg[0].text == "Average of Total amount: -0.23"

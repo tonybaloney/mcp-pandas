@@ -164,6 +164,21 @@ async def handle_list_tools() -> list[types.Tool]:
                 "required": ["kind"],
             },
         ),
+        # Average of column
+        types.Tool(
+            name="average",
+            description="Calculate the average of a column",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "column": {
+                        "type": "string",
+                        "description": "Column name to calculate the average for",
+                    },
+                },
+                "required": ["column"],
+            },
+        ),
     ]
 
 @server.call_tool()
@@ -185,6 +200,12 @@ async def handle_call_tool(
             plot_data = out.read()
             out.close()
             return [types.ImageContent(type='image', mimeType="image/png", data=b64encode(plot_data).decode('utf-8'))]
+        elif name == "average":
+            column = arguments.get("column")
+            if column not in df.columns:
+                raise ValueError(f"Column '{column}' not found in DataFrame")
+            average_value = round(df[column].mean(), 3)
+            return [types.TextContent(type="text", text=f"Average of {column}: {average_value}")]
 
     except Exception as e:
         return [types.TextContent(type="text", text=f"Error: {str(e)}")]

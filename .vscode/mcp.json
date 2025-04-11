@@ -4,6 +4,7 @@
             "command": "uvx",
             "type": "stdio",
             "args": [
+                "--no-cache",
                 "mcp-pandas",
                 "--data-path",
                 "~/Downloads/Statements.xlsx"

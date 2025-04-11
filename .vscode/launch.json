@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "name": "MCP: Pandas",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "mcp-pandas",
+      "cwd": "${workspaceFolder}/src"
+    }
+  ]
+}
